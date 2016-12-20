@@ -8,7 +8,11 @@ namespace Task{
     static double targetFunction(double x) {
         // x^4 + 3*x^3 + 6*x^3 + 8
 //        return x*x*x*x + 6*x*x*x + 8;
-        return x*x;
+//        return x*x;
+//        |x^4-3x^3-2x^2+x-2|
+        return fabs(x*x*x*x-3*x*x*x-2*x*x+x-2);
+        //cos(18x-3)sin(10x-7)+1.5
+//        return cos(18*x-3)*sin(10*x-7)+1.5;
     }
     static double restriction1(double x) {
         return 2*x;
@@ -20,6 +24,15 @@ namespace Task{
 
 class TaskResult{
 public:
+    static TaskResult findMinimum(TaskResult* results, int size) {
+        TaskResult minimum = results[0];
+        for (int i = 0; i < size; ++i) {
+            if (results[i].getResult() < minimum.getResult()) {
+                minimum = results[i];
+            }
+        }
+        return minimum;
+    }
     TaskResult() {}
     TaskResult(double pointX, double result) : pointX(pointX), result(result) {}
 
@@ -106,7 +119,7 @@ public:
 
 
 void runParallel(int argc, char** argv) {
-    TaskParametrs taskParametrs(-10,10,0.005, 0.000001);
+    TaskParametrs taskParametrs(-50,50,0.005, 0.000001);
 
     int processCount = 0;
     MPI_Comm_size(MPI_COMM_WORLD, &processCount);
@@ -123,20 +136,15 @@ void runParallel(int argc, char** argv) {
     TaskResult localMin = Calculating::runCalculating(taskParametrs);
 
     // Get all result
-//    double* resultsX = new double[processCount];
     TaskResult results[processCount];
     MPI_Gather(&localMin, sizeof(TaskResult), MPI_BYTE, results, sizeof(TaskResult), MPI_BYTE, ROOT_RANK, MPI_COMM_WORLD);
 
-//    double pX = localMin.getPointX();
-//    MPI_Gather(&localMin, sizeof(TaskResult), MPI_BYTE, results, sizeof(TaskResult), MPI_BYTE, ROOT_RANK, MPI_COMM_WORLD);
-//    MPI_Gather(&pX, 1, MPI_DOUBLE, resultsX, 1, MPI_DOUBLE, ROOT_RANK, MPI_COMM_WORLD);
-//    std::cout << "point x: " << resultsX[0] << std::endl;
+    TaskResult globMin = TaskResult::findMinimum(results, processCount);
 
-    //std::cout << "result: " << results[0]->getResult() << std::endl;
     for (int i = 0; i < processCount; ++i) {
         printf("x: %.15lf\tresult: %.15lf\n", results[i].getPointX(), results[i].getResult());
-//        std::cout << "x: " << results[i].getPointX() << "\t\tresult: " << results[i].getResult() << std::endl;
     }
+    printf("\nResult : x: %.15lf\tresult: %.15lf\n", globMin.getPointX(), globMin.getResult());
 
 }
 
@@ -150,7 +158,7 @@ void runSubjects() {
     // Start calculating for other process
     TaskResult localMin = Calculating::runCalculating(taskParametrs);
 
-    TaskResult results[0];
+    TaskResult* results;
     // Send calculating data
     MPI_Gather(&localMin, sizeof(TaskResult), MPI_BYTE, results, sizeof(TaskResult), MPI_BYTE, ROOT_RANK, MPI_COMM_WORLD);
 
