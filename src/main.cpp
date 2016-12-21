@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cmath>
 #include "mpi.h"
 
 typedef int ProcRank;
@@ -136,7 +135,8 @@ void runParallel(int argc, char** argv) {
     TaskResult localMin = Calculating::runCalculating(taskParametrs);
 
     // Get all result
-    TaskResult results[processCount];
+    TaskResult* results;
+    results = new TaskResult[processCount];
     MPI_Gather(&localMin, sizeof(TaskResult), MPI_BYTE, results, sizeof(TaskResult), MPI_BYTE, ROOT_RANK, MPI_COMM_WORLD);
 
     TaskResult globMin = TaskResult::findMinimum(results, processCount);
